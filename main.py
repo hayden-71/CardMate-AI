@@ -124,7 +124,7 @@ st.markdown("""
 
     /* 사이드바 */
     section[data-testid="stSidebar"] {
-        background: #1a1a2e;
+        background: #1e3932;
     }
     section[data-testid="stSidebar"] * { color: white !important; }
 
