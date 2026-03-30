@@ -126,7 +126,7 @@ st.markdown("""
     section[data-testid="stSidebar"] {
         background: #1e3932;
     }
-    section[data-testid="stSidebar"] * { color: white !important; }
+    /*section[data-testid="stSidebar"] * { color: white !important; }*/
 
     /* 헤더 */
     .main-header {
@@ -386,15 +386,21 @@ with st.sidebar:
     st.markdown("## ⚙️ 설정")
     st.markdown("---")
 
-    # 1. API 키 숨기기 (화면에는 안 보이고 백그라운드에서만 가져옴)
+    # Streamlit Cloud Secrets → .env → 직접 입력 순으로 우선순위
     load_dotenv()
-    if hasattr(st, "secrets") and "OPENAI_API_KEY" in st.secrets:
-        api_key = st.secrets["OPENAI_API_KEY"]
-    else:
-        api_key = os.getenv("OPENAI_API_KEY", "")
+    _auto_key = st.secrets.get("OPENAI_API_KEY", "") if hasattr(st, "secrets") else ""
+    if not _auto_key:
+        _auto_key = os.getenv("OPENAI_API_KEY", "")
 
-    # st.markdown("---") # API 키 입력창이 사라졌으므로 불필요한 구분선 제거
+    api_key = st.text_input(
+        "OpenAI API Key",
+        value=_auto_key,
+        type="password",
+        placeholder="sk-...",
+        help="Streamlit Cloud Secrets 또는 .env 파일에 설정하면 자동 입력됩니다.",
+    )
 
+    st.markdown("---")
     st.markdown("### 💡 질문 예시")
     examples = [
         "편의점이랑 교통카드 할인 되는 체크카드 추천해줘",
@@ -415,26 +421,18 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    
-    # 2. 하단 텍스트 색상 및 디자인 개선 (다크/라이트 모드 자동 대응)
     st.markdown("""
-    <div style='
-        font-size: 13px; 
-        color: var(--text-color); 
-        background-color: var(--secondary-background-color); 
-        padding: 15px; 
-        border-radius: 10px; 
-        line-height: 1.6;
-    '>
-        <b>💳 CardMate</b>는 카드 혜택 DB를 기반으로<br>
-        맞춤형 카드를 추천해 드립니다.<br><br>
-        <b>🛠️ 사용 기술:</b><br>
-        • Hybrid Search (BM25 + Vector)<br>
-        • RAG-Fusion (RRF)<br>
-        • Popularity Re-ranking<br>
-        • GPT-3.5-turbo (또는 4o-mini)
+    <div style='font-size:12px; opacity:0.7;'>
+    CardMate는 카드 혜택 DB를 기반으로<br>
+    맞춤형 카드를 추천해 드립니다.<br><br>
+    <b>사용 기술:</b><br>
+    • Hybrid Search (BM25 + Vector)<br>
+    • RAG-Fusion (RRF)<br>
+    • Popularity Re-ranking<br>
+    • GPT-3.5-turbo
     </div>
     """, unsafe_allow_html=True)
+
 
 # ─────────────────────────────────────────
 # 메인 화면
@@ -485,25 +483,15 @@ SYSTEM_PROMPT = """당신은 대한민국 최고의 '신용/체크카드 맞춤�
 6. 카드 종류 준수: 사용자가 체크/신용카드를 요청하면 그 종류만 추천하세요.
 7. 단계적 사고: 카드 추천 전 [1단계: 소비패턴분석] [2단계: 카드적합성검토] [3단계: 최적카드선정] 수행.
 
-[출력 형식 (Output Format)]
-상황에 따라 아래 두 가지 포맷 중 하나를 선택하여 작성하세요. 
+[출력 형식]
+**[소비 패턴 분석]**
+(1~2줄 요약)
 
-👉 [상황 A] 일반적인 추천 요청일 경우 (최대 3개 출력)
-### 💳 [카드명]
-![카드이미지](실제 제공된 이미지 URL)
-* **핵심 혜택:** (가장 강력한 혜택 1~2가지를 구체적 수치와 함께 요약)
-* **연회비:** (금액 기재) / **전월실적:** (금액 기재)
-* **추천 이유:** (사용자의 상황과 카드의 강점을 연결하여 1~2줄로 논리적으로 설명)
-
-👉 [상황 B] 특정 카드 지정 및 혜택 전체 질문일 경우 (해당 카드 1개만 상세 출력)
-### 💳 [카드명] 전체 혜택 안내
-![카드이미지](실제 제공된 이미지 URL)
-* **연회비:** (금액 기재) / **전월실적:** (금액 기재)
-
-**[상세 혜택 목록]**
-* **(카테고리명):** (구체적인 혜택 내용, 조건, 한도 등 상세히 기재)
-... ([Context]에 제공된 모든 혜택을 빠짐없이 불릿 포인트로 나열)
-
+**[추천 카드]**
+### 💳 [카드명] ###
+* **핵심 혜택:** (구체적 수치 포함)
+* **연회비:** (수치) / **전월실적:** (수치)
+* **추천 이유:** (1~2줄 논리적 설명)
 
 [카드 혜택 정보(Context)]
 {context}
